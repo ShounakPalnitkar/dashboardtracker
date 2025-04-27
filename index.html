@@ -3,24 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kidney Health Manager</title>
+    <title>Kidney Health Dashboard</title>
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Conflict-free styles */
-        #kidney-manager {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
+        /* Modern, clean styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f9ff;
+            margin: 0;
             padding: 20px;
-            background: #f8fafc;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: #333;
         }
-        .manager-section {
+        .dashboard {
+            max-width: 1000px;
+            margin: 0 auto;
             background: white;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 8px;
-            border-left: 4px solid #1e40af;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+        }
+        h1 {
+            color: #1a6fc9;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #1a6fc9;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #1a6fc9;
+            font-size: 1.2rem;
         }
         .progress-bar {
             height: 20px;
@@ -31,7 +54,7 @@
         }
         .progress-fill {
             height: 100%;
-            background: #1e40af;
+            background: #1a6fc9;
             width: 0%;
             transition: width 0.5s;
         }
@@ -39,80 +62,88 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px dashed #e2e8f0;
+            border-bottom: 1px solid #f0f4f8;
         }
         button {
-            background: #1e40af;
+            background: #1a6fc9;
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 10px 15px;
+            border-radius: 6px;
             cursor: pointer;
             margin-top: 10px;
+            font-weight: 600;
         }
         input, select {
             width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            box-sizing: border-box;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
         }
         .time-input {
             display: flex;
-            gap: 5px;
+            gap: 10px;
         }
         .time-input select {
-            width: 50%;
+            flex: 1;
+        }
+        .chart-container {
+            height: 250px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
 
-<div id="kidney-manager">
-    <h2>Kidney Health Manager</h2>
+<div class="dashboard">
+    <h1>Kidney Health Dashboard</h1>
     
     <!-- Medication Tracker -->
-    <div class="manager-section">
-        <h3>💊 Today's Medications</h3>
-        <div id="medication-progress" class="progress-bar">
-            <div class="progress-fill" id="med-progress-fill"></div>
+    <div class="card">
+        <h2>💊 Medication Schedule</h2>
+        <div class="progress-bar">
+            <div class="progress-fill" id="med-progress"></div>
         </div>
-        <p id="med-summary">0/0 medications taken</p>
+        <p id="med-summary">0/0 medications taken today</p>
         <div id="medication-log"></div>
         <input type="text" id="med-name" placeholder="Medication name">
         <div class="time-input">
             <select id="med-hour">
-                <option value="1">1</option><option value="2">2</option>
-                <!-- Hours 1-12 -->
+                <option value="8">8 AM</option>
+                <option value="12">12 PM</option>
+                <option value="18">6 PM</option>
+                <option value="22">10 PM</option>
             </select>
             <select id="med-minute">
-                <option value="00">00</option><option value="15">15</option>
-                <option value="30">30</option><option value="45">45</option>
-            </select>
-            <select id="med-ampm">
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
+                <option value="00">:00</option>
+                <option value="30">:30</option>
             </select>
         </div>
         <button id="add-med">Add Medication</button>
     </div>
     
-    <!-- Fluid Intake -->
-    <div class="manager-section">
-        <h3>💧 Fluid Intake</h3>
+    <!-- Fluid Intake Tracker -->
+    <div class="card">
+        <h2>💧 Fluid Intake</h2>
         <div class="progress-bar">
-            <div class="progress-fill" id="fluid-progress-fill"></div>
+            <div class="progress-fill" id="fluid-progress"></div>
         </div>
         <p id="fluid-summary">0ml / 1500ml</p>
         <div id="fluid-log"></div>
         <input type="number" id="fluid-amount" placeholder="Amount (ml)">
-        <button id="log-fluid">Add Intake</button>
+        <button id="log-fluid">Log Intake</button>
     </div>
     
-    <!-- Symptoms & Appointments -->
-    <div class="manager-section">
-        <h3>📅 Health Log</h3>
+    <!-- Symptom & Appointment Tracker -->
+    <div class="card">
+        <h2>⚠️ Symptom Log</h2>
         <div id="symptom-log"></div>
         <select id="symptom-type">
             <option value="">Select symptom</option>
@@ -122,16 +153,30 @@
         </select>
         <button id="log-symptom">Log Symptom</button>
         
-        <h4 style="margin-top:20px;">Upcoming Appointments</h4>
+        <h2 style="margin-top: 20px;">📅 Upcoming Appointments</h2>
         <div id="appointment-list"></div>
-        <input type="text" id="appointment-desc" placeholder="Purpose (e.g., Nephrologist Visit)">
+        <input type="text" id="appointment-desc" placeholder="Doctor's name / purpose">
         <input type="date" id="appointment-date">
-        <button id="add-appointment">Schedule</button>
+        <button id="add-appointment">Add Appointment</button>
+    </div>
+    
+    <!-- Visualizations -->
+    <div class="card">
+        <h2>📊 Weekly Progress</h2>
+        <div class="chart-container">
+            <canvas id="medication-chart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <h2>📈 Symptom Frequency</h2>
+        <div class="chart-container">
+            <canvas id="symptom-chart"></canvas>
+        </div>
     </div>
 </div>
 
 <script>
-    // Data Management
+    // ===== DATA MANAGEMENT =====
     function getKidneyData() {
         const today = new Date().toLocaleDateString();
         return JSON.parse(localStorage.getItem('kidneyHealthData')) || {
@@ -148,33 +193,33 @@
         updateDashboard();
     }
     
-    // Dashboard Update
+    // ===== DASHBOARD UPDATE =====
     function updateDashboard() {
         const data = getKidneyData();
         const today = new Date().toLocaleDateString();
         
-        // Medications
+        // 1. Update Medication Tracker
         const todaysMeds = data.medications.filter(med => med.date === today);
         const takenMeds = todaysMeds.filter(med => med.taken).length;
         
-        document.getElementById('med-progress-fill').style.width = 
+        document.getElementById('med-progress').style.width = 
             todaysMeds.length ? `${(takenMeds / todaysMeds.length) * 100}%` : '0%';
         document.getElementById('med-summary').textContent = 
-            `${takenMeds}/${todaysMeds.length} medications taken`;
+            `${takenMeds}/${todaysMeds.length} medications taken today`;
         
         document.getElementById('medication-log').innerHTML = todaysMeds
-            .map(med => `<div class="log-entry">
+            .map(med => `<div class="log-entry" data-id="${med.id}">
                 <span>${med.name} (${med.time})</span>
-                <span>${med.taken ? '✅ Taken' : '❌ Pending'}</span>
-            </div>`).join('') || '<p>No medications scheduled</p>';
+                <span class="med-status">${med.taken ? '✅ Taken' : '❌ Pending'}</span>
+            </div>`).join('') || '<p>No medications scheduled today</p>';
         
-        // Fluids
-        const fluidGoal = 1500; // Can be customized
+        // 2. Update Fluid Intake
+        const fluidGoal = 1500;
         const totalFluid = data.fluids
             .filter(f => f.date === today)
             .reduce((sum, f) => sum + f.amount, 0);
         
-        document.getElementById('fluid-progress-fill').style.width = 
+        document.getElementById('fluid-progress').style.width = 
             `${Math.min(100, (totalFluid / fluidGoal) * 100)}%`;
         document.getElementById('fluid-summary').textContent = 
             `${totalFluid}ml / ${fluidGoal}ml`;
@@ -186,7 +231,7 @@
                 <span>${f.time}</span>
             </div>`).join('') || '<p>No fluids logged today</p>';
         
-        // Symptoms & Appointments
+        // 3. Update Symptoms & Appointments
         document.getElementById('symptom-log').innerHTML = data.symptoms
             .filter(s => s.date === today)
             .map(s => `<div class="log-entry">
@@ -207,21 +252,85 @@
                 <span>${app.desc}</span>
                 <span>${new Date(app.date).toLocaleDateString()}</span>
             </div>`).join('') || '<p>No upcoming appointments</p>';
+        
+        // 4. Update Charts
+        updateCharts(data);
     }
     
-    // Event Listeners
+    // ===== CHARTS =====
+    function updateCharts(data) {
+        // Medication Adherence Chart (Last 7 Days)
+        const medCtx = document.getElementById('medication-chart').getContext('2d');
+        const medChart = new Chart(medCtx, {
+            type: 'bar',
+            data: {
+                labels: getLast7Days(),
+                datasets: [{
+                    label: 'Medications Taken',
+                    data: calculateWeeklyMedications(data),
+                    backgroundColor: '#1a6fc9',
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 10 }
+                }
+            }
+        });
+        
+        // Symptom Frequency Chart
+        const symptomCtx = document.getElementById('symptom-chart').getContext('2d');
+        const symptomChart = new Chart(symptomCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Fatigue', 'Swelling', 'Nausea'],
+                datasets: [{
+                    data: calculateSymptomFrequency(data),
+                    backgroundColor: ['#1a6fc9', '#3b82f6', '#93c5fd'],
+                }]
+            }
+        });
+    }
+    
+    function getLast7Days() {
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            days.push(date.toLocaleDateString([], { month: 'short', day: 'numeric' }));
+        }
+        return days;
+    }
+    
+    function calculateWeeklyMedications(data) {
+        const days = getLast7Days();
+        return days.map(day => {
+            const meds = data.medications.filter(m => m.date === day && m.taken);
+            return meds.length;
+        });
+    }
+    
+    function calculateSymptomFrequency(data) {
+        const symptoms = ['Fatigue', 'Swelling', 'Nausea'];
+        return symptoms.map(symptom => 
+            data.symptoms.filter(s => s.type === symptom).length
+        );
+    }
+    
+    // ===== EVENT LISTENERS =====
     document.getElementById('add-med').addEventListener('click', () => {
         const name = document.getElementById('med-name').value.trim();
         const hour = document.getElementById('med-hour').value;
         const minute = document.getElementById('med-minute').value;
-        const ampm = document.getElementById('med-ampm').value;
         
         if (!name) return;
         
         const data = getKidneyData();
         data.medications.push({
+            id: Date.now(),
             name,
-            time: `${hour}:${minute} ${ampm}`,
+            time: `${hour}:${minute}`,
             date: new Date().toLocaleDateString(),
             taken: false
         });
@@ -275,18 +384,14 @@
         document.getElementById('appointment-desc').value = '';
     });
     
-    // Mark medications as taken
+    // Mark medication as taken
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('log-entry') && 
-            e.target.textContent.includes('Pending')) {
-            const medName = e.target.textContent.split(' (')[0];
-            const data = getKidneyData();
+        if (e.target.closest('.log-entry') && e.target.textContent.includes('Pending')) {
+            const entry = e.target.closest('.log-entry');
+            const medId = parseInt(entry.dataset.id);
             
-            const med = data.medications.find(m => 
-                m.name === medName && 
-                m.date === new Date().toLocaleDateString() && 
-                !m.taken
-            );
+            const data = getKidneyData();
+            const med = data.medications.find(m => m.id === medId);
             
             if (med) {
                 med.taken = true;
