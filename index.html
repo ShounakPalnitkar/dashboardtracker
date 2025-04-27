@@ -3,47 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kidney Health Tracker</title>
+    <title>Kidney Health Manager</title>
     <style>
-        /* Minimal, conflict-free styles */
-        #kidney-tracker {
+        /* Conflict-free styles */
+        #kidney-manager {
             font-family: Arial, sans-serif;
-            max-width: 500px;
+            max-width: 600px;
             margin: 20px auto;
             padding: 20px;
             background: #f8fafc;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        #kidney-tracker h2 {
-            color: #1e40af;
-            text-align: center;
-            margin-top: 0;
-        }
-        .tracker-card {
+        .manager-section {
             background: white;
             padding: 15px;
             margin: 15px 0;
             border-radius: 8px;
             border-left: 4px solid #1e40af;
         }
-        .progress-circle {
-            width: 80px;
-            height: 80px;
-            margin: 10px auto;
-            border-radius: 50%;
-            background: conic-gradient(#1e40af 0%, #e0e7ff 0%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #1e40af;
+        .progress-bar {
+            height: 20px;
+            background: #e0e7ff;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #1e40af;
+            width: 0%;
+            transition: width 0.5s;
         }
         .log-entry {
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px dashed #e2e8f0;
         }
         button {
             background: #1e40af;
@@ -53,7 +49,6 @@
             border-radius: 4px;
             cursor: pointer;
             margin-top: 10px;
-            width: 100%;
         }
         input, select {
             width: 100%;
@@ -63,139 +58,245 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+        .time-input {
+            display: flex;
+            gap: 5px;
+        }
+        .time-input select {
+            width: 50%;
+        }
     </style>
 </head>
 <body>
 
-<!-- COPY FROM HERE -->
-<div id="kidney-tracker">
-    <h2>My Kidney Health</h2>
+<div id="kidney-manager">
+    <h2>Kidney Health Manager</h2>
     
-    <!-- Today's Summary -->
-    <div class="tracker-card">
-        <h3>📅 Today's Progress</h3>
-        <div class="progress-circle" id="daily-progress">0%</div>
-        <p id="daily-summary">No entries yet today</p>
+    <!-- Medication Tracker -->
+    <div class="manager-section">
+        <h3>💊 Today's Medications</h3>
+        <div id="medication-progress" class="progress-bar">
+            <div class="progress-fill" id="med-progress-fill"></div>
+        </div>
+        <p id="med-summary">0/0 medications taken</p>
+        <div id="medication-log"></div>
+        <input type="text" id="med-name" placeholder="Medication name">
+        <div class="time-input">
+            <select id="med-hour">
+                <option value="1">1</option><option value="2">2</option>
+                <!-- Hours 1-12 -->
+            </select>
+            <select id="med-minute">
+                <option value="00">00</option><option value="15">15</option>
+                <option value="30">30</option><option value="45">45</option>
+            </select>
+            <select id="med-ampm">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+            </select>
+        </div>
+        <button id="add-med">Add Medication</button>
     </div>
     
     <!-- Fluid Intake -->
-    <div class="tracker-card">
+    <div class="manager-section">
         <h3>💧 Fluid Intake</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" id="fluid-progress-fill"></div>
+        </div>
+        <p id="fluid-summary">0ml / 1500ml</p>
         <div id="fluid-log"></div>
-        <input type="number" id="fluid-input" placeholder="Amount (ml)">
-        <button id="log-fluid">Add Fluid</button>
+        <input type="number" id="fluid-amount" placeholder="Amount (ml)">
+        <button id="log-fluid">Add Intake</button>
     </div>
     
-    <!-- Symptoms -->
-    <div class="tracker-card">
-        <h3>⚠️ Symptoms</h3>
+    <!-- Symptoms & Appointments -->
+    <div class="manager-section">
+        <h3>📅 Health Log</h3>
         <div id="symptom-log"></div>
-        <select id="symptom-input">
-            <option value="">Select a symptom</option>
-            <option value="Swelling">Swelling</option>
+        <select id="symptom-type">
+            <option value="">Select symptom</option>
             <option value="Fatigue">Fatigue</option>
+            <option value="Swelling">Swelling</option>
             <option value="Nausea">Nausea</option>
         </select>
-        <button id="log-symptom">Add Symptom</button>
-    </div>
-    
-    <!-- Weekly Trend -->
-    <div class="tracker-card">
-        <h3>📈 This Week</h3>
-        <div id="weekly-trend">
-            <p>Complete 2+ days to see trends</p>
-        </div>
+        <button id="log-symptom">Log Symptom</button>
+        
+        <h4 style="margin-top:20px;">Upcoming Appointments</h4>
+        <div id="appointment-list"></div>
+        <input type="text" id="appointment-desc" placeholder="Purpose (e.g., Nephrologist Visit)">
+        <input type="date" id="appointment-date">
+        <button id="add-appointment">Schedule</button>
     </div>
 </div>
 
 <script>
-    // Local storage for patient data
+    // Data Management
     function getKidneyData() {
-        const today = new Date().toISOString().split('T')[0];
-        return JSON.parse(localStorage.getItem('kidneyData')) || {
+        const today = new Date().toLocaleDateString();
+        return JSON.parse(localStorage.getItem('kidneyHealthData')) || {
             lastUpdated: today,
-            dailyGoals: { fluids: 1500 },
-            entries: {}
+            medications: [],
+            fluids: [],
+            symptoms: [],
+            appointments: []
         };
     }
     
     function saveKidneyData(data) {
-        localStorage.setItem('kidneyData', JSON.stringify(data));
+        localStorage.setItem('kidneyHealthData', JSON.stringify(data));
         updateDashboard();
     }
     
-    // Update the dashboard display
+    // Dashboard Update
     function updateDashboard() {
         const data = getKidneyData();
-        const today = new Date().toISOString().split('T')[0];
-        const todayEntries = data.entries[today] || { fluids: [], symptoms: [] };
+        const today = new Date().toLocaleDateString();
         
-        // Calculate fluid progress
-        const totalFluids = todayEntries.fluids.reduce((sum, entry) => sum + entry.amount, 0);
-        const fluidPercent = Math.min(100, (totalFluids / data.dailyGoals.fluids * 100));
+        // Medications
+        const todaysMeds = data.medications.filter(med => med.date === today);
+        const takenMeds = todaysMeds.filter(med => med.taken).length;
         
-        // Update progress circle
-        const progressCircle = document.getElementById('daily-progress');
-        progressCircle.style.background = `conic-gradient(#1e40af ${fluidPercent}%, #e0e7ff ${fluidPercent}%)`;
-        progressCircle.textContent = `${Math.round(fluidPercent)}%`;
+        document.getElementById('med-progress-fill').style.width = 
+            todaysMeds.length ? `${(takenMeds / todaysMeds.length) * 100}%` : '0%';
+        document.getElementById('med-summary').textContent = 
+            `${takenMeds}/${todaysMeds.length} medications taken`;
         
-        // Update logs
-        document.getElementById('fluid-log').innerHTML = todayEntries.fluids
-            .map(entry => `<div class="log-entry">
-                <span>${entry.amount}ml</span>
-                <span>${entry.time}</span>
-            </div>`)
-            .join('') || '<p>No fluids logged yet</p>';
+        document.getElementById('medication-log').innerHTML = todaysMeds
+            .map(med => `<div class="log-entry">
+                <span>${med.name} (${med.time})</span>
+                <span>${med.taken ? '✅ Taken' : '❌ Pending'}</span>
+            </div>`).join('') || '<p>No medications scheduled</p>';
         
-        document.getElementById('symptom-log').innerHTML = todayEntries.symptoms
-            .map(symptom => `<div class="log-entry">
-                <span>${symptom.name}</span>
-                <span>${symptom.time}</span>
-            </div>`)
-            .join('') || '<p>No symptoms today</p>';
+        // Fluids
+        const fluidGoal = 1500; // Can be customized
+        const totalFluid = data.fluids
+            .filter(f => f.date === today)
+            .reduce((sum, f) => sum + f.amount, 0);
         
-        // Update summary
-        document.getElementById('daily-summary').innerHTML = `
-            <strong>${todayEntries.fluids.length} fluid entries</strong><br>
-            <strong>${todayEntries.symptoms.length} symptoms reported</strong>
-        `;
+        document.getElementById('fluid-progress-fill').style.width = 
+            `${Math.min(100, (totalFluid / fluidGoal) * 100)}%`;
+        document.getElementById('fluid-summary').textContent = 
+            `${totalFluid}ml / ${fluidGoal}ml`;
+        
+        document.getElementById('fluid-log').innerHTML = data.fluids
+            .filter(f => f.date === today)
+            .map(f => `<div class="log-entry">
+                <span>${f.amount}ml</span>
+                <span>${f.time}</span>
+            </div>`).join('') || '<p>No fluids logged today</p>';
+        
+        // Symptoms & Appointments
+        document.getElementById('symptom-log').innerHTML = data.symptoms
+            .filter(s => s.date === today)
+            .map(s => `<div class="log-entry">
+                <span>${s.type}</span>
+                <span>${s.time}</span>
+            </div>`).join('') || '<p>No symptoms today</p>';
+        
+        // Upcoming appointments (next 7 days)
+        const upcomingApps = data.appointments.filter(app => {
+            const appDate = new Date(app.date);
+            const todayDate = new Date();
+            return appDate >= todayDate && 
+                   (appDate - todayDate) / (1000 * 60 * 60 * 24) <= 7;
+        }).sort((a,b) => new Date(a.date) - new Date(b.date));
+        
+        document.getElementById('appointment-list').innerHTML = upcomingApps
+            .map(app => `<div class="log-entry">
+                <span>${app.desc}</span>
+                <span>${new Date(app.date).toLocaleDateString()}</span>
+            </div>`).join('') || '<p>No upcoming appointments</p>';
     }
     
-    // Event listeners
+    // Event Listeners
+    document.getElementById('add-med').addEventListener('click', () => {
+        const name = document.getElementById('med-name').value.trim();
+        const hour = document.getElementById('med-hour').value;
+        const minute = document.getElementById('med-minute').value;
+        const ampm = document.getElementById('med-ampm').value;
+        
+        if (!name) return;
+        
+        const data = getKidneyData();
+        data.medications.push({
+            name,
+            time: `${hour}:${minute} ${ampm}`,
+            date: new Date().toLocaleDateString(),
+            taken: false
+        });
+        
+        saveKidneyData(data);
+        document.getElementById('med-name').value = '';
+    });
+    
     document.getElementById('log-fluid').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('fluid-input').value);
+        const amount = parseInt(document.getElementById('fluid-amount').value);
         if (!amount || amount <= 0) return;
         
         const data = getKidneyData();
-        const today = new Date().toISOString().split('T')[0];
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        if (!data.entries[today]) data.entries[today] = { fluids: [], symptoms: [] };
-        data.entries[today].fluids.push({ amount, time });
+        data.fluids.push({
+            amount,
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
         
         saveKidneyData(data);
-        document.getElementById('fluid-input').value = '';
+        document.getElementById('fluid-amount').value = '';
     });
     
     document.getElementById('log-symptom').addEventListener('click', () => {
-        const symptom = document.getElementById('symptom-input').value;
+        const symptom = document.getElementById('symptom-type').value;
         if (!symptom) return;
         
         const data = getKidneyData();
-        const today = new Date().toISOString().split('T')[0];
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        if (!data.entries[today]) data.entries[today] = { fluids: [], symptoms: [] };
-        data.entries[today].symptoms.push({ name: symptom, time });
+        data.symptoms.push({
+            type: symptom,
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
         
         saveKidneyData(data);
-        document.getElementById('symptom-input').value = '';
+        document.getElementById('symptom-type').value = '';
+    });
+    
+    document.getElementById('add-appointment').addEventListener('click', () => {
+        const desc = document.getElementById('appointment-desc').value.trim();
+        const date = document.getElementById('appointment-date').value;
+        if (!desc || !date) return;
+        
+        const data = getKidneyData();
+        data.appointments.push({
+            desc,
+            date: new Date(date).toLocaleDateString()
+        });
+        
+        saveKidneyData(data);
+        document.getElementById('appointment-desc').value = '';
+    });
+    
+    // Mark medications as taken
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('log-entry') && 
+            e.target.textContent.includes('Pending')) {
+            const medName = e.target.textContent.split(' (')[0];
+            const data = getKidneyData();
+            
+            const med = data.medications.find(m => 
+                m.name === medName && 
+                m.date === new Date().toLocaleDateString() && 
+                !m.taken
+            );
+            
+            if (med) {
+                med.taken = true;
+                saveKidneyData(data);
+            }
+        }
     });
     
     // Initialize
     document.addEventListener('DOMContentLoaded', updateDashboard);
 </script>
-<!-- COPY TO HERE -->
-
 </body>
 </html>
