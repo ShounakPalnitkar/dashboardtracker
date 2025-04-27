@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kidney Health Dashboard</title>
+    <style>
+        /* Isolated styles - won't affect other elements */
+        .kidney-dashboard {
+            font-family: 'Arial', sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f9ff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard-header {
+            color: #1a6fc9;
+            border-bottom: 2px solid #d6e4ff;
+            padding-bottom: 10px;
+        }
+        .metric-card {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 20px;
+            background: #e0e6f0;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #1a6fc9;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .log-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e0e6f0;
+        }
+        .add-entry {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .add-entry input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #d6e4ff;
+            border-radius: 4px;
+        }
+        .add-entry button {
+            background: #1a6fc9;
+            color: white;
+            border: none;
+            padding: 0 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="kidney-dashboard">
+    <h2 class="dashboard-header">Daily Kidney Health Tracker</h2>
+    <p>Track your daily progress and stay within recommended limits</p>
+    
+    <!-- Water Intake Card -->
+    <div class="metric-card">
+        <h3>💧 Water Intake</h3>
+        <div class="progress-bar">
+            <div class="progress-fill" id="water-progress"></div>
+        </div>
+        <div id="water-log">
+            <!-- Log entries will appear here -->
+        </div>
+        <div class="add-entry">
+            <input type="number" id="water-input" placeholder="Amount in ml">
+            <button id="log-water">+ Add</button>
+        </div>
+    </div>
+    
+    <!-- Medication Card -->
+    <div class="metric-card">
+        <h3>💊 Medications Taken</h3>
+        <div id="medication-log">
+            <div class="log-entry">
+                <span>Lisinopril</span>
+                <span>08:00 AM ✅</span>
+            </div>
+        </div>
+        <div class="add-entry">
+            <input type="text" id="medication-input" placeholder="Medication name">
+            <button id="log-medication">+ Add</button>
+        </div>
+    </div>
+    
+    <!-- Symptoms Card -->
+    <div class="metric-card">
+        <h3>⚠️ Symptoms</h3>
+        <div id="symptom-log"></div>
+        <div class="add-entry">
+            <select id="symptom-input">
+                <option value="">Select symptom</option>
+                <option value="Swelling">Swelling</option>
+                <option value="Fatigue">Fatigue</option>
+                <option value="Nausea">Nausea</option>
+                <option value="Other">Other</option>
+            </select>
+            <button id="log-symptom">+ Add</button>
+        </div>
+    </div>
+    
+    <!-- Daily Summary -->
+    <div class="metric-card">
+        <h3>📊 Today's Summary</h3>
+        <p id="daily-summary">Complete your entries to see daily insights</p>
+        <button id="reset-day">Start New Day</button>
+    </div>
+</div>
+
+<script>
+    // Local storage management
+    function getDailyData() {
+        const today = new Date().toLocaleDateString();
+        return JSON.parse(localStorage.getItem('kidneyDailyData') || { 
+            date: today,
+            water: 0,
+            waterGoal: 2000,
+            medications: [],
+            symptoms: [] 
+        };
+    }
+    
+    function saveDailyData(data) {
+        localStorage.setItem('kidneyDailyData', JSON.stringify(data));
+        updateDashboard();
+    }
+    
+    // DOM elements
+    const waterInput = document.getElementById('water-input');
+    const medInput = document.getElementById('medication-input');
+    const symptomInput = document.getElementById('symptom-input');
+    
+    // Initialize dashboard
+    function updateDashboard() {
+        const data = getDailyData();
+        
+        // Update water progress
+        const waterProgress = document.getElementById('water-progress');
+        const waterPercent = Math.min(100, (data.water / data.waterGoal * 100));
+        waterProgress.style.width = waterPercent + '%';
+        
+        // Update water log
+        const waterLog = document.getElementById('water-log');
+        waterLog.innerHTML = `
+            <div class="log-entry">
+                <span>Total consumed:</span>
+                <span>${data.water}ml / ${data.waterGoal}ml</span>
+            </div>
+        `;
+        
+        // Update summary
+        const summary = document.getElementById('daily-summary');
+        summary.innerHTML = `
+            <p>✅ ${data.medications.length} medications taken</p>
+            <p>⚠️ ${data.symptoms.length} symptoms reported</p>
+            <p>💧 ${waterPercent.toFixed(0)}% of water goal achieved</p>
+        `;
+    }
+    
+    // Event listeners
+    document.getElementById('log-water').addEventListener('click', () => {
+        const amount = parseInt(waterInput.value);
+        if (!amount || amount <= 0) return;
+        
+        const data = getDailyData();
+        data.water += amount;
+        saveDailyData(data);
+        waterInput.value = '';
+    });
+    
+    document.getElementById('log-medication').addEventListener('click', () => {
+        const medName = medInput.value.trim();
+        if (!medName) return;
+        
+        const data = getDailyData();
+        data.medications.push({
+            name: medName,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        saveDailyData(data);
+        medInput.value = '';
+    });
+    
+    document.getElementById('log-symptom').addEventListener('click', () => {
+        const symptom = symptomInput.value;
+        if (!symptom) return;
+        
+        const data = getDailyData();
+        data.symptoms.push({
+            name: symptom,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        saveDailyData(data);
+        symptomInput.value = '';
+    });
+    
+    document.getElementById('reset-day').addEventListener('click', () => {
+        if (confirm("Start a new day? This will clear today's data.")) {
+            localStorage.removeItem('kidneyDailyData');
+            updateDashboard();
+        }
+    });
+    
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', updateDashboard);
+</script>
+
+</body>
+</html>
